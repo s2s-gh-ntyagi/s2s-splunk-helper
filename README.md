@@ -12,8 +12,8 @@ This project provides a Dockerized Python application to interact with Splunk, r
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/splunk-helper.git
-   cd splunk-helper
+   git clone https://github.com/s2s-gh-ntyagi/s2s-splunk-helper.git
+   cd s2s-splunk-helper
    ```
    
 2. **Environment Variables**
