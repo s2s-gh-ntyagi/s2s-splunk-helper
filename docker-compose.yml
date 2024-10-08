@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  splunk_helper:
+    build: .
+    volumes:
+      - ./logs:/app/logs
+      - ./output:/app/output
+    command: python main.py
