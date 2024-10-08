@@ -10,6 +10,9 @@ from concurrent.futures import ThreadPoolExecutor
 from loguru import logger
 from datetime import datetime
 
+# Load environment variables from .env file
+load_dotenv()
+
 # Create directories for logs and output files
 os.makedirs("logs", exist_ok=True)
 
@@ -17,8 +20,10 @@ os.makedirs("logs", exist_ok=True)
 log_filename = f"logs/splunk_service_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 logger.add(log_filename, rotation="1 MB", retention="10 days")
 
-# Create a timestamped folder for output JSON files
-output_folder = f"output_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+# Create a timestamped folder inside an "outputs" directory for JSON files
+output_base_folder = "output"
+timestamp_folder = datetime.now().strftime('%Y%m%d_%H%M%S')
+output_folder = os.path.join(output_base_folder, timestamp_folder)
 os.makedirs(output_folder, exist_ok=True)
 
 class SplunkService:
@@ -30,8 +35,6 @@ class SplunkService:
         """
         Initialize the SplunkService by loading environment variables and connecting to Splunk.
         """
-        load_dotenv()  # Load environment variables from .env file
-
         splunk_url = os.getenv('SPLUNK_URL')
         api_token = os.getenv('SPLUNK_API_TOKEN')
 
@@ -172,8 +175,7 @@ def process_item(splunk_service, index, sourcetype):
     logger.info(f"Found {len(fields)} fields")
 
     # Save the results to a separate JSON file
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"{output_folder}/{index}_{sourcetype}_fields_{timestamp}.json"
+    filename = f"{output_folder}/{index}_{sourcetype}_fields.json"
     with open(filename, 'w') as f:
         json.dump({"index": index, "sourcetype": sourcetype, "fields": fields}, f, indent=2)
     logger.info(f"Results saved to {filename}")
@@ -197,8 +199,10 @@ async def main():
     indices_and_sourcetypes = splunk_service.get_indices_and_sourcetypes()
     logger.info(f"Found {len(indices_and_sourcetypes)} index-sourcetype combinations")
 
-    # 2. Retrieve all fields for each sourcetype in each index in batches of 5
-    batch_size = 5
+    # Get batch size from environment variable or default to 5
+    batch_size = int(os.getenv('BATCH_SIZE', 5))
+
+    # 2. Retrieve all fields for each sourcetype in each index in batches
     results = []
     with ThreadPoolExecutor(max_workers=5) as executor:
         for i in range(0, len(indices_and_sourcetypes), batch_size):
